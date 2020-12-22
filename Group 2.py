@@ -2,6 +2,7 @@ import numpy as np
 
 
 
+
 class Store:
     def __init__(self, number, cost_tbl, p, n):
         self.number = number
@@ -163,19 +164,19 @@ store_positions_indexes = {str(convert_to_bits(store_sets[i])): i for i in range
 store_indexes = {i: i - 1 for i in range(1, number_of_shops_N + 1)}
 # setup matrix where all values are inf
 solution_matrix = np.ones((number_of_shops_N, 2 ** number_of_shops_N)) * float('inf')
+solution_matrix[s][0] = 0
 store_lst = [Store(i, cost_table, max_cluster_size_P, number_of_shops_N) for i in range(1, number_of_shops_N + 1)]
 # initial options to get to FINAL POSITION
 options = [(store_lst[s].n_forward(i)[-1], store_lst[s].n_forward(i), store_lst[store_indexes[store_lst[s].n_forward(i)[-1]]].costs[i-1]) for i in (1, p)] + \
           [(store_lst[s].n_back(i)[-1], store_lst[s].n_back(i), store_lst[store_indexes[store_lst[s].n_back(i)[-1]]].costs[i-1]) for i in (1, p)]
 final_positions = convert_position(options)
 
-best_routes = {}
+
 for position in final_positions:  # insert final step values to matrix (1 step to s,[]) [1,1,1] is all visited
     solution_matrix[store_indexes[position[0]]][store_positions_indexes[position[1]]] = position[2]
 # iterate over paths that take 2 steps or more
 # paths that take more than L cars are impossible, therefore they will be left as infinity
 last_positions = final_positions
-best_path = []
 if p >= number_of_shops_N: # no need to iterate, optimal solution is to take all stores in a single cluster
     print(store_lst[s].costs[number_of_shops_N-1])
 for i in range(2, number_of_cars_L+1):  # main loop
@@ -186,11 +187,28 @@ for i in range(2, number_of_cars_L+1):  # main loop
         position_sum = sum(list(map(int, position[1][1:-1].split(","))))
         # for every previous position, decide if the path from it is better or not
         for prv_pos in prv_pos_lst:
-            solution_matrix[prv_pos[0]-1][store_positions_indexes[str(prv_pos[1])]] = min(
-                solution_matrix[prv_pos[0]-1][store_positions_indexes[str(prv_pos[1])]],
-                position[2] + store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1])
+            current_value = position[2] + store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1]
+            prv_value = solution_matrix[prv_pos[0]-1][store_positions_indexes[str(prv_pos[1])]]
+            if current_value < prv_value:  # solve belman equation (find min)
+                solution_matrix[prv_pos[0] - 1][store_positions_indexes[str(prv_pos[1])]] = current_value
+                # update that store is best to go from previous position to the store in parent position
+                last_move = store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1]
     last_positions = tmp_lst[::]
+total_cost = solution_matrix[s][-1]
+current_path = [store_sets[-1]]
+while total_cost > 0:
+    next_move = total_cost - last_move
+    state_index = np.where(solution_matrix == next_move)
+    current_path.append(store_sets[state_index[1][0]])
+    total_cost -= last_move
+    last_move = next_move
+print("\nStarting From Store {}".format(start_store_S))
+print("\nClusters")
+for i in range(1,len(current_path)):  # print clusters
+    print(set(current_path[i-1]).difference(set(current_path[i])))
+print("\nOptimal Cost Is {}\n".format(solution_matrix[s][-1]))
 print(solution_matrix)
+
 
 if __name__ == "__main__":
     pass
