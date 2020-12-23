@@ -142,7 +142,7 @@ def prv_positions(position):
 
 
 # ###### CODE START ##########
-with open('input.txt', 'r') as file:
+with open('input2.txt', 'r') as file:
     given_data = file.readlines()
 cost_table = []
 for i in range(len(given_data)):
@@ -154,7 +154,7 @@ for i in range(len(given_data)):
         max_cluster_size_P = int(given_data[i])
     else:
         cost_table.append(list(map(int, given_data[i].strip().split(","))))
-start_store_S = 3
+start_store_S = 1
 start_store_index = start_store_S - 1
 p = 2
 s = start_store_index  # starting store index
@@ -192,8 +192,10 @@ for i in range(2, number_of_cars_L+1):  # main loop
             if current_value < prv_value:  # solve belman equation (find min)
                 solution_matrix[prv_pos[0] - 1][store_positions_indexes[str(prv_pos[1])]] = current_value
                 # update that store is best to go from previous position to the store in parent position
-                last_move = store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1]
-    last_positions = tmp_lst[::]
+                # if cell is the origin of the problem, keep the value of the move
+                if prv_pos[0] - 1 == s and len(store_sets) - 1 == store_positions_indexes[str(prv_pos[1])]:
+                    last_move = store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1]
+    last_positions = tmp_lst[:]
 total_cost = solution_matrix[s][-1]
 current_path = [store_sets[-1]]
 while total_cost > 0:
