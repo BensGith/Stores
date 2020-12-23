@@ -135,14 +135,16 @@ def prv_positions(position):
         if (sum(option) == 1 and option[start_store_index] != 1) or option == current_visited or (
                 sum(option) == 0 and cluster[-1] != start_store_S):
             continue
+        if  sum(list(map(int, position[1][1:-1].split(",")))) - sum(option) > p:
+            continue
         if str(option) not in added_options:
             added_options.add(str(option))
-            optional_prv.append((cluster[-1], option))
+            optional_prv.append((cluster[-1], str(option),solution_matrix[cluster[-1]-1][store_positions_indexes[str(option)]]))
     return optional_prv
 
 
 # ###### CODE START ##########
-with open('input2.txt', 'r') as file:
+with open('input3.txt', 'r') as file:
     given_data = file.readlines()
 cost_table = []
 for i in range(len(given_data)):
@@ -154,9 +156,9 @@ for i in range(len(given_data)):
         max_cluster_size_P = int(given_data[i])
     else:
         cost_table.append(list(map(int, given_data[i].strip().split(","))))
-start_store_S = 1
+start_store_S = 2
 start_store_index = start_store_S - 1
-p = 2
+p = max_cluster_size_P
 s = start_store_index  # starting store index
 store_sets = power_set(number_of_shops_N)
 # dictionary that stores string representation of bit array -used to access the index
@@ -167,9 +169,13 @@ solution_matrix = np.ones((number_of_shops_N, 2 ** number_of_shops_N)) * float('
 solution_matrix[s][0] = 0
 store_lst = [Store(i, cost_table, max_cluster_size_P, number_of_shops_N) for i in range(1, number_of_shops_N + 1)]
 # initial options to get to FINAL POSITION
-options = [(store_lst[s].n_forward(i)[-1], store_lst[s].n_forward(i), store_lst[store_indexes[store_lst[s].n_forward(i)[-1]]].costs[i-1]) for i in (1, p)] + \
-          [(store_lst[s].n_back(i)[-1], store_lst[s].n_back(i), store_lst[store_indexes[store_lst[s].n_back(i)[-1]]].costs[i-1]) for i in (1, p)]
-final_positions = convert_position(options)
+start_state = (start_store_S,str(convert_to_bits(store_sets[0])),0)
+# add costs from store s to matrix!
+options = prv_positions(start_state)
+# options = [(store_lst[s].n_forward(i)[-1], store_lst[s].n_forward(i), store_lst[store_indexes[store_lst[s].n_forward(i)[-1]]].costs[i-1]) for i in (1, p)] + \
+#           [(store_lst[s].n_back(i)[-1], store_lst[s].n_back(i), store_lst[store_indexes[store_lst[s].n_back(i)[-1]]].costs[i-1]) for i in (1, p)]
+# final_positions = convert_position(options)
+final_positions = options
 
 
 for position in final_positions:  # insert final step values to matrix (1 step to s,[]) [1,1,1] is all visited
@@ -183,25 +189,33 @@ for i in range(2, number_of_cars_L+1):  # main loop
     tmp_lst = []
     for position in last_positions:
         prv_pos_lst = (prv_positions(position))  # generate 2P possible positions,remove non valid ones
-        tmp_lst.append(prv_pos_lst)
+        tmp_lst += prv_pos_lst
         position_sum = sum(list(map(int, position[1][1:-1].split(","))))
         # for every previous position, decide if the path from it is better or not
         for prv_pos in prv_pos_lst:
-            current_value = position[2] + store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1]
+            current_value = position[2] + store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(list(map(int, prv_pos[1][1:-1].split(",")))))-1]
             prv_value = solution_matrix[prv_pos[0]-1][store_positions_indexes[str(prv_pos[1])]]
             if current_value < prv_value:  # solve belman equation (find min)
                 solution_matrix[prv_pos[0] - 1][store_positions_indexes[str(prv_pos[1])]] = current_value
+
                 # update that store is best to go from previous position to the store in parent position
                 # if cell is the origin of the problem, keep the value of the move
                 if prv_pos[0] - 1 == s and len(store_sets) - 1 == store_positions_indexes[str(prv_pos[1])]:
-                    last_move = store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(prv_pos[1]))-1]
+                    last_move = store_lst[prv_pos[0] - 1].costs[abs(position_sum - sum(list(map(int, prv_pos[1][1:-1].split(",")))))-1]
     last_positions = tmp_lst[:]
 total_cost = solution_matrix[s][-1]
+current_store_idx = s
 current_path = [store_sets[-1]]
 while total_cost > 0:
     next_move = total_cost - last_move
     state_index = np.where(solution_matrix == next_move)
-    current_path.append(store_sets[state_index[1][0]])
+    possible_next = sorted([(state_index[0][i],state_index[1][i]) for i in range(len(state_index[0]))],key=lambda x:x[1],reverse=True)
+    for possible_cluster in possible_next:
+        pass # if position is valid
+        # calculate the cost from current store to next store
+        # decrease the number from total_cost
+        # assign
+    current_path.append(store_sets[max(state_index[1])]) # we want the maximum step - but we have to check that it's valid
     total_cost -= last_move
     last_move = next_move
 print("\nStarting From Store {}".format(start_store_S))
