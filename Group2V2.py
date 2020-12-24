@@ -115,6 +115,7 @@ class TSP:
         for i in range(self.l):
             states.append(next_state)
             if self.best_path[next_state] == str([1 for i in range(self.n)]):
+                states.append(str([1 for i in range(self.n)]))
                 break
             next_state = self.best_path[next_state]
         current_path = [set(self.store_set[self.position_indexes[position]]) for position in states]
