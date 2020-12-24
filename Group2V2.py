@@ -226,7 +226,7 @@ def open_file(path):
 
 
 if __name__ == "__main__":
-    n, l, p, costs = open_file("input3.txt")
+    n, l, p, costs = open_file("input.txt")
     optional_solutions = []
     for i in range(1, n+1):
         tsp1 = TSP(i, n, l, p, costs, True)
