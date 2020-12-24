@@ -135,7 +135,7 @@ def prv_positions(position):
         if (sum(option) == 1 and option[start_store_index] != 1) or option == current_visited or (
                 sum(option) == 0 and cluster[-1] != start_store_S):
             continue
-        if  sum(list(map(int, position[1][1:-1].split(",")))) - sum(option) > p:
+        if sum(list(map(int, position[1][1:-1].split(",")))) - sum(option) > p:
             continue
         if str(option) not in added_options:
             added_options.add(str(option))
@@ -169,21 +169,18 @@ solution_matrix = np.ones((number_of_shops_N, 2 ** number_of_shops_N)) * float('
 solution_matrix[s][0] = 0
 store_lst = [Store(i, cost_table, max_cluster_size_P, number_of_shops_N) for i in range(1, number_of_shops_N + 1)]
 # initial options to get to FINAL POSITION
-start_state = (start_store_S,str(convert_to_bits(store_sets[0])),0)
+start_state = (start_store_S, str(convert_to_bits(store_sets[0])), 0)
 # add costs from store s to matrix!
 options = prv_positions(start_state)
-# options = [(store_lst[s].n_forward(i)[-1], store_lst[s].n_forward(i), store_lst[store_indexes[store_lst[s].n_forward(i)[-1]]].costs[i-1]) for i in (1, p)] + \
-#           [(store_lst[s].n_back(i)[-1], store_lst[s].n_back(i), store_lst[store_indexes[store_lst[s].n_back(i)[-1]]].costs[i-1]) for i in (1, p)]
-# final_positions = convert_position(options)
-final_positions = options
-
-
+final_positions = [(position[0], position[1],
+        store_lst[position[0] - 1].costs[abs(number_of_shops_N - sum(list(map(int, position[1][1:-1].split(",")))))-1]) for position in options]
 for position in final_positions:  # insert final step values to matrix (1 step to s,[]) [1,1,1] is all visited
-    solution_matrix[store_indexes[position[0]]][store_positions_indexes[position[1]]] = position[2]
+    solution_matrix[store_indexes[position[0]]][store_positions_indexes[position[1]]] = store_lst[position[0] - 1].costs[abs(number_of_shops_N - sum(list(map(int, position[1][1:-1].split(",")))))-1]
 # iterate over paths that take 2 steps or more
 # paths that take more than L cars are impossible, therefore they will be left as infinity
 last_positions = final_positions
-if p >= number_of_shops_N: # no need to iterate, optimal solution is to take all stores in a single cluster
+best_paths = {position[1]:start_state[1] for position in final_positions}
+if p >= number_of_shops_N:  # no need to iterate, optimal solution is to take all stores in a single cluster
     print(store_lst[s].costs[number_of_shops_N-1])
 for i in range(2, number_of_cars_L+1):  # main loop
     tmp_lst = []
@@ -197,7 +194,7 @@ for i in range(2, number_of_cars_L+1):  # main loop
             prv_value = solution_matrix[prv_pos[0]-1][store_positions_indexes[str(prv_pos[1])]]
             if current_value < prv_value:  # solve belman equation (find min)
                 solution_matrix[prv_pos[0] - 1][store_positions_indexes[str(prv_pos[1])]] = current_value
-
+                best_paths[prv_pos[1]]=position[1]
                 # update that store is best to go from previous position to the store in parent position
                 # if cell is the origin of the problem, keep the value of the move
                 if prv_pos[0] - 1 == s and len(store_sets) - 1 == store_positions_indexes[str(prv_pos[1])]:
@@ -209,7 +206,7 @@ current_path = [store_sets[-1]]
 while total_cost > 0:
     next_move = total_cost - last_move
     state_index = np.where(solution_matrix == next_move)
-    possible_next = sorted([(state_index[0][i],state_index[1][i]) for i in range(len(state_index[0]))],key=lambda x:x[1],reverse=True)
+    possible_next = sorted([(state_index[0][i], state_index[1][i]) for i in range(len(state_index[0]))],key=lambda x:x[1],reverse=True)
     for possible_cluster in possible_next:
         pass # if position is valid
         # calculate the cost from current store to next store
@@ -218,6 +215,10 @@ while total_cost > 0:
     current_path.append(store_sets[max(state_index[1])]) # we want the maximum step - but we have to check that it's valid
     total_cost -= last_move
     last_move = next_move
+next_state = str([0 for i in range(number_of_shops_N)])
+for i in range(7):
+    print(best_paths[next_state])
+    next_state = best_paths[next_state]
 print("\nStarting From Store {}".format(start_store_S))
 print("\nClusters")
 for i in range(1,len(current_path)):  # print clusters
