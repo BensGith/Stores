@@ -20,15 +20,6 @@ class Store:
     def __repr__(self):
         return "Store {} - {}".format(self.number, self.score)
 
-    def __lt__(self, other):
-        return self.score < other.score
-
-    def __add__(self, other):
-        return self.score + other.score
-
-    def __radd__(self, other):
-        return self.score + other
-
     def cost_n_stores(self, steps):
         """
         get the cost of collecting this store + (steps -1) stores together
@@ -76,7 +67,6 @@ class TSP:
         self.best_path = {}
         self.optimal_solution = float('inf')
 
-
     def __lt__(self, other):
         return self.optimal_solution < other.optimal_solution
 
@@ -101,11 +91,9 @@ class TSP:
                     prv_value = self.mat[prv_pos[0] - 1][self.position_indexes[str(prv_pos[1])]]
                     if current_value < prv_value:  # solve belman equation (find min)
                         self.mat[prv_pos[0] - 1][self.position_indexes[str(prv_pos[1])]] = current_value
-                        self.best_path[prv_pos[1]] = position[1]
                         # update that store is best to go from previous position to the store in parent position
-                        # if cell is the origin of the problem, keep the value of the move
-                        if prv_pos[0] - 1 == self.s and len(self.store_set) - 1 == self.position_indexes[str(prv_pos[1])]:
-                            last_move = self.cost_of_cluster(position, prv_pos)
+                        self.best_path[prv_pos[1]] = position[1]
+
             final_positions = tmp_lst[:]
         self.optimal_solution = self.mat[self.s][-1]
 
@@ -226,7 +214,7 @@ def open_file(path):
 
 
 if __name__ == "__main__":
-    n, l, p, costs = open_file("input.txt")
+    n, l, p, costs = open_file("input3.txt")
     optional_solutions = []
     for i in range(1, n+1):
         tsp1 = TSP(i, n, l, p, costs, True)
